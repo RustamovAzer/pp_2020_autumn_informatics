@@ -147,18 +147,16 @@ Matrix ParallelGauss(const Matrix& matrix, int rows, int cols,
             MPI_Recv(local_matrix.data() + row_count * rows, rows, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
 
-    int root, new_root;
+
+    int root;
+    int max_i;
     // Прямой ход
     for (int current_col = 0; current_col < cols - 1; current_col++) {
-        new_root = -1;
-        root = -1;
         if (current_col % procNum == procRank) {
-            new_root = procRank;
             // Найти максимум по модулю в столбце
             double max = 0.0;
-            int max_i = 0;
+            max_i = 0;
             for (int local_col = 0; local_col < rows; local_col++) {
                 if ((fabs(local_matrix[(current_col / procNum) * rows + local_col]) >= fabs(max))&&
                     (was_pivot[local_col] == -1)) {
@@ -177,11 +175,13 @@ Matrix ParallelGauss(const Matrix& matrix, int rows, int cols,
                 }
             }
         }
-        // Передать root, was_pivot, coefs, pivot_order
-        MPI_Allreduce(&new_root, &root, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        MPI_Bcast(was_pivot, rows, MPI_CHAR, root, MPI_COMM_WORLD);
+        // Передать max_i, coefs
+        root = current_col % procNum;
+        MPI_Bcast(&max_i, 1, MPI_INT, root, MPI_COMM_WORLD);
+        was_pivot[max_i] = 1;
         MPI_Bcast(coefs.data(), rows, MPI_DOUBLE, root, MPI_COMM_WORLD);
-        MPI_Bcast(pivot_order, rows, MPI_INT, root, MPI_COMM_WORLD);
+        pivot_order[current_col] = max_i;
+
         // Вычесть ведущую строку из остальных
         for (int local_row = 0; local_row < delta + remain_for_proc; local_row++) {
             for (int local_col = 0; local_col < rows; local_col++) {

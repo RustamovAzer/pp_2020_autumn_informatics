@@ -5,7 +5,6 @@
 
 using Matrix = std::vector<double>;
 
-void printMatrix(const Matrix& vec, int rows, int cols);
 Matrix RandomMatrix(int rows, int cols);
 Matrix SequentialGauss(const Matrix& matrix, int rows, int cols,
                         const Matrix& vec, int vector_size);

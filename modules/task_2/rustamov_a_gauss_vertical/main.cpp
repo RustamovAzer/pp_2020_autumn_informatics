@@ -152,23 +152,29 @@ TEST(Gauss_Vertical, 6x6x6) {
     }
 }
 
-TEST(Gauss_Vertical, 20x20x20) {
+TEST(Gauss_Vertical, 100x100x100) {
     int procRank;
     MPI_Comm_rank(MPI_COMM_WORLD, &procRank);
-    int rows = 20, cols = 20, vecSize = 20;
-    Matrix matrix;
+    int rows = 100, vecSize = 100, cols = 100;
     Matrix vec;
+    Matrix matrix;
     Matrix res1, res2;
     if (procRank == 0) {
         matrix = RandomMatrix(rows, cols);
         vec = RandomMatrix(vecSize, 1);
     }
+    double time_start1 = MPI_Wtime();
     res1 = ParallelGauss(matrix, rows, cols, vec, vecSize);
+    double time_end1 = MPI_Wtime();
     if (procRank == 0) {
+        double time_start2 = MPI_Wtime();
         Matrix res2 = SequentialGauss(matrix, rows, cols, vec, vecSize);
+        double time_end2 = MPI_Wtime();
         for (int row = 0; row < rows; row++) {
             ASSERT_NEAR(res1[row], res2[row], EPSILON);
         }
+        std::cout << "Seq:" << time_end2 - time_start2 << std::endl;
+        std::cout << "Par:" << time_end1 - time_start1 << std::endl;
     }
 }
 
